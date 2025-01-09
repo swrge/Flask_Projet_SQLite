@@ -5,7 +5,7 @@ from urllib.request import urlopen
 from werkzeug.utils import secure_filename
 import sqlite3
 
-app = Flask(__name__)                                                                                                                  
+app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'  # Clé secrète pour les sessions
 
 # Fonction pour créer une clé "authentifie" dans la session utilisateur
@@ -39,6 +39,19 @@ def authentification():
 
     return render_template('formulaire_authentification.html', error=False)
 
+@app.route('/fiche_nom', methods=['GET', 'POST'])
+def user_auth():
+    if request.method == 'POST':
+        # Vérifier les identifiants
+        if request.form['username'] == 'user' and request.form['password'] == '1234': # password à cacher par la suite
+            session['authentifie'] = True
+            # Rediriger vers la route lecture après une authentification réussie
+            return redirect(url_for('fiche_nom'))
+        else:
+            # Afficher un message d'erreur si les identifiants sont incorrects
+            return render_template('formulaire_authentification.html', error=True)
+
+    return render_template('formulaire_authentification.html', error=False)
 @app.route('/fiche_client/<int:post_id>')
 def Readfiche(post_id):
     conn = sqlite3.connect('database.db')
@@ -76,6 +89,9 @@ def enregistrer_client():
     conn.commit()
     conn.close()
     return redirect('/consultation/')  # Rediriger vers la page d'accueil après l'enregistrement
-                                                                                                                                       
+
+
+
+
 if __name__ == "__main__":
   app.run(debug=True)
