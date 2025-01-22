@@ -45,7 +45,7 @@ def user_auth():
     if request.form['username'] == 'user' and request.form['password'] == '1234': # password à cacher par la suite
         session['authentifie_user'] = True
         # Rediriger vers la route lecture après une authentification réussie
-        return render_template('ficher_nom.html')
+        return "<h2>Vous êtes un utilisateur enregistré !</h2>"
     else:
         # Afficher un message d'erreur si les identifiants sont incorrects
         return render_template('formulaire_authentification.html', error=True)
