@@ -39,7 +39,7 @@ def authentification():
 
     return render_template('formulaire_authentification.html', error=False)
 
-@app.route('/fiche_nom', methods=['POST'])
+@app.route('/fiche_nom', methods=['GET', 'POST'])
 def user_auth():
     # Vérifier les identifiants
     if request.form['username'] == 'user' and request.form['password'] == '1234': # password à cacher par la suite
