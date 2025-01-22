@@ -5,7 +5,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    role ENUM('admin', 'member') NOT NULL DEFAULT 'member',
+    role TEXT NOT NULL CHECK (role IN ('admin', 'member')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
