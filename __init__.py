@@ -41,14 +41,18 @@ def authentification():
 
 @app.route('/fiche_nom', methods=['GET', 'POST'])
 def user_auth():
-    # Vérifier les identifiants
-    if request.form['username'] == 'user' and request.form['password'] == '1234': # password à cacher par la suite
-        session['authentifie_user'] = True
-        # Rediriger vers la route lecture après une authentification réussie
-        return "<h2>Vous êtes un utilisateur enregistré !</h2>"
+    if request.method == 'POST':
+
+        # Vérifier les identifiants
+        if request.form['username'] == 'user' and request.form['password'] == '1234': # password à cacher par la suite
+            session['authentifie_user'] = True
+            # Rediriger vers la route lecture après une authentification réussie
+            return "<h2>Vous êtes un utilisateur enregistré !</h2>"
+        else:
+            return "<h2>Utilisateur ou mot de passe incorrect !</h2>"
     else:
         # Afficher un message d'erreur si les identifiants sont incorrects
-        return render_template('formulaire_authentification.html', error=True)
+        return render_template('ficher_nom.html', error=False)
 
 @app.route('/fiche_client/<int:post_id>')
 def Readfiche(post_id):
