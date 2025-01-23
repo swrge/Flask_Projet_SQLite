@@ -1,9 +1,7 @@
 import sqlite3
 
-# Connect to the database or create it if it doesn't exist
 connection = sqlite3.connect('books.db')
 
-# Execute the schema script to create tables
 with open('schema2.sql') as f:
     connection.executescript(f.read())
 
