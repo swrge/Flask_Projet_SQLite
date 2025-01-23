@@ -1,6 +1,6 @@
 import sqlite3
 
-connection = sqlite3.connect('books.db')
+connection = sqlite3.connect('bibliotheque.db')
 
 with open('schema2.sql') as f:
     connection.executescript(f.read())
