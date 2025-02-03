@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 import sqlite3
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev'
+app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/'
 
 def get_db_connection():
     conn = sqlite3.connect('bibliotheque.db')
