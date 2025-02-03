@@ -1,0 +1,14 @@
+.book-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+.search-form {
+    margin: 20px 0;
+}
+
+.alert {
+    margin-top: 20px;
+}
