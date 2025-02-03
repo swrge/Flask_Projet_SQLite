@@ -1,99 +1,130 @@
-from flask import Flask, render_template_string, render_template, jsonify, request, redirect, url_for, session
-from flask import render_template
-from flask import json
-from urllib.request import urlopen
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, url_for, flash
 import sqlite3
 
 app = Flask(__name__)
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'  # Clé secrète pour les sessions
+app.config['SECRET_KEY'] = 'dev'
 
-# Fonction pour créer une clé "authentifie" dans la session utilisateur
-def est_authentifie():
-    return session.get('authentifie')
+def get_db_connection():
+    conn = sqlite3.connect('bibliotheque.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Simple user session management without Flask-Login
+def is_logged_in():
+    return 'user_id' in session
+
+def is_admin():
+    return session.get('role') == 'admin'
 
 @app.route('/')
-def hello_world():
-    return render_template('hello.html')
+def index():
+    conn = get_db_connection()
+    books = conn.execute('SELECT * FROM books').fetchall()
+    conn.close()
+    return render_template('index.html', books=books)
 
-@app.route('/lecture')
-def lecture():
-    if not est_authentifie():
-        # Rediriger vers la page d'authentification si l'utilisateur n'est pas authentifié
-        return redirect(url_for('authentification'))
-
-  # Si l'utilisateur est authentifié
-    return "<h2>Bravo, vous êtes authentifié</h2>"
-
-@app.route('/authentification', methods=['GET', 'POST'])
-def authentification():
+@app.route('/login', methods=['GET', 'POST'])
+def login():
     if request.method == 'POST':
-        # Vérifier les identifiants
-        if request.form['username'] == 'admin' and request.form['password'] == 'password': # password à cacher par la suite
-            session['authentifie'] = True
-            # Rediriger vers la route lecture après une authentification réussie
-            return redirect(url_for('lecture'))
-        else:
-            # Afficher un message d'erreur si les identifiants sont incorrects
-            return render_template('formulaire_authentification.html', error=True)
+        username = request.form['username']
+        password = request.form['password']  # Plain text password
+        
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', 
+                          (username, password)).fetchone()
+        conn.close()
 
-    return render_template('formulaire_authentification.html', error=False)
+        if user:
+            session['user_id'] = user['user_id']
+            session['username'] = user['username']
+            session['role'] = user['role']
+            flash('Successfully logged in!')
+            return redirect(url_for('index'))
+        
+        flash('Invalid username or password')
+    return render_template('login.html')
 
-@app.route('/fiche_nom', methods=['GET', 'POST'])
-def user_auth():
+@app.route('/register', methods=['GET', 'POST'])
+def register():
     if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']  # Plain text password
+        email = request.form['email']
+        
+        conn = get_db_connection()
+        try:
+            conn.execute('INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)',
+                        (username, password, email, 'member'))
+            conn.commit()
+            flash('Registration successful!')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            flash('Username or email already exists!')
+        finally:
+            conn.close()
+    
+    return render_template('register.html')
 
-        # Vérifier les identifiants
-        if request.form['username'] == 'user' and request.form['password'] == '1234': # password à cacher par la suite
-            session['authentifie_user'] = True
-            # Rediriger vers la route lecture après une authentification réussie
-            return "<h2>Vous êtes un utilisateur enregistré !</h2>"
-        else:
-            return "<h2>Utilisateur ou mot de passe incorrect !</h2>"
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+@app.route('/books/add', methods=['GET', 'POST'])
+def add_book():
+    if not is_admin():
+        flash('Admin access required')
+        return redirect(url_for('index'))
+        
+    if request.method == 'POST':
+        title = request.form['title']
+        author = request.form['author']
+        genre = request.form['genre']
+        isbn = request.form['isbn']
+        publication_year = request.form['publication_year']
+        quantity = request.form['quantity']
+        
+        conn = get_db_connection()
+        conn.execute('INSERT INTO books (title, author, genre, isbn, publication_year, quantity) VALUES (?, ?, ?, ?, ?, ?)',
+                    (title, author, genre, isbn, publication_year, quantity))
+        conn.commit()
+        conn.close()
+        flash('Book successfully added!')
+        return redirect(url_for('index'))
+    
+    return render_template('add_book.html')
+
+@app.route('/books/borrow/<int:book_id>', methods=['POST'])
+def borrow_book():
+    if not is_logged_in():
+        flash('Please login to borrow books')
+        return redirect(url_for('login'))
+        
+    conn = get_db_connection()
+    book = conn.execute('SELECT * FROM books WHERE book_id = ?', (book_id,)).fetchone()
+    
+    if book['quantity'] > 0:
+        conn.execute('UPDATE books SET quantity = quantity - 1 WHERE book_id = ?', (book_id,))
+        conn.execute('INSERT INTO loans (user_id, book_id, status) VALUES (?, ?, ?)',
+                    (session['user_id'], book_id, 'active'))
+        conn.commit()
+        flash('Book borrowed successfully!')
     else:
-        # Afficher un message d'erreur si les identifiants sont incorrects
-        return render_template('ficher_nom.html', error=False)
-
-@app.route('/fiche_client/<int:post_id>')
-def Readfiche(post_id):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM clients WHERE id = ?', (post_id,))
-    data = cursor.fetchall()
+        flash('Book not available')
+    
     conn.close()
-    # Rendre le template HTML et transmettre les données
-    return render_template('read_data.html', data=data)
+    return redirect(url_for('index'))
 
-@app.route('/consultation/')
-def ReadBDD():
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM clients;')
-    data = cursor.fetchall()
+@app.route('/books/search')
+def search_books():
+    query = request.args.get('q', '')
+    conn = get_db_connection()
+    books = conn.execute(
+        'SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ?',
+        (f'%{query}%', f'%{query}%', f'%{query}%')
+    ).fetchall()
     conn.close()
-    return render_template('read_data.html', data=data)
+    return render_template('search_results.html', books=books, query=query)
 
-@app.route('/enregistrer_client', methods=['GET'])
-def formulaire_client():
-    return render_template('formulaire.html')  # afficher le formulaire
-
-@app.route('/enregistrer_client', methods=['POST'])
-def enregistrer_client():
-    nom = request.form['nom']
-    prenom = request.form['prenom']
-
-    # Connexion à la base de données
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-
-    # Exécution de la requête SQL pour insérer un nouveau client
-    cursor.execute('INSERT INTO clients (created, nom, prenom, adresse) VALUES (?, ?, ?, ?)', (1002938, nom, prenom, "ICI"))
-    conn.commit()
-    conn.close()
-    return redirect('/consultation/')  # Rediriger vers la page d'accueil après l'enregistrement
-
-
-
-
-if __name__ == "__main__":
-  app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
