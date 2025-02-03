@@ -1,25 +1,33 @@
-
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     role TEXT NOT NULL CHECK (role IN ('admin', 'member')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 DROP TABLE IF EXISTS books;
 CREATE TABLE books (
-    book_id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL,
-    genre VARCHAR(100),
-    isbn VARCHAR(20) UNIQUE,
-    publication_year YEAR,
-    quantity INT DEFAULT 1,
+    book_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL,
+    genre TEXT,
+    isbn TEXT UNIQUE,
+    publication_year INTEGER,
+    quantity INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
-
+DROP TABLE IF EXISTS loans;
+CREATE TABLE loans (
+    loan_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    book_id INTEGER,
+    loan_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    return_date TIMESTAMP,
+    status TEXT CHECK (status IN ('active', 'returned')),
+    FOREIGN KEY (user_id) REFERENCES users (user_id),
+    FOREIGN KEY (book_id) REFERENCES books (book_id)
+);
