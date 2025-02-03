@@ -13,7 +13,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Simple user session management without Flask-Login
+# Simple user session management 
 def is_logged_in():
     return 'user_id' in session
 
