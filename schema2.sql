@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    password TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     role TEXT NOT NULL CHECK (role IN ('admin', 'member')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -31,3 +31,4 @@ CREATE TABLE loans (
     FOREIGN KEY (user_id) REFERENCES users (user_id),
     FOREIGN KEY (book_id) REFERENCES books (book_id)
 );
+
